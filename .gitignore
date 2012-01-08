@@ -1,4 +1,6 @@
 */*.jpg
+*/*.png
+*/*.gif
 *.swp
 *.DS_Store
 *.sh
