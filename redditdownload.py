@@ -90,7 +90,7 @@ def _downloadFromUrl(url, destDir):
     if not filetype in ['image/jpeg', 'image/png', 'image/gif']:
         raise WrongFileTypeException('WRONG fp TYPE: %s has type: %s!' % (url, filetype))
 
-    filename = os.path.join(args.dir, os.path.basename(url))
+    filename = os.path.join(destDir, os.path.basename(url))
 
     # Don't download files multiple times!
     if os.path.exists(filename):
