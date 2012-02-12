@@ -138,7 +138,7 @@ def _extractUrls(url):
 
     return urls
 
-if __name__ == "__main__":
+def main():
     p = argparse.ArgumentParser(description='Downloads files with specified extension from the specified subreddit.')
     p.add_argument('reddit', metavar='<subreddit>', help='Subreddit name.')
     p.add_argument('dir', metavar='<destdir>', help='Dir to put downloaded files in.')
@@ -239,3 +239,7 @@ if __name__ == "__main__":
         lastId = post['id']
 
     print 'Downloaded %d files (Processed %d, Skipped %d, Exists %d)' % (nDownloaded, nTotal, nSkipped, nErrors)
+
+
+if __name__ == "__main__":
+    main()
