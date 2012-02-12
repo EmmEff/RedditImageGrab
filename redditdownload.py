@@ -204,7 +204,7 @@ if __name__ == "__main__":
 
             for url in _extractUrls(post['url']):
                 try:
-                    filename = _downloadFromUrl(url, args.dir)
+                    _downloadFromUrl(url, args.dir)
 
                     # Image downloaded successfully!
                     print '    Downloaded URL [%s].' % (url)
