@@ -92,7 +92,7 @@ def _downloadFromUrl(url, destDir):
     if not FILETYPE in ['image/jpeg', 'image/png', 'image/gif']:
         raise WrongFileTypeException('WRONG FILE TYPE: %s has type: %s!' % (url, FILETYPE))
 
-    FILENAME = pathjoin(ARGS.dir, pathbasename(url))
+    FILENAME = pathjoin(args.dir, pathbasename(url))
 
     # Don't download files multiple times!
     if pathexists(FILENAME):
@@ -141,37 +141,37 @@ def _extractUrls(url):
     return urls
 
 if __name__ == "__main__":
-    PARSER = ArgumentParser(description='Downloads files with specified extension from the specified subreddit.')
-    PARSER.add_argument('reddit', metavar='<subreddit>', help='Subreddit name.')
-    PARSER.add_argument('dir', metavar='<destdir>', help='Dir to put downloaded files in.')
-    PARSER.add_argument('-last', metavar='l', default='', required=False, help='ID of the last downloaded file.')
-    PARSER.add_argument('-score', metavar='s', default=0, type=int, required=False, help='Minimum score of images to download.')
-    PARSER.add_argument('-num', metavar='n', default=0, type=int, required=False, help='Number of images to download.')
-    PARSER.add_argument('-update', default=False, action='store_true', required=False, help='Run until you encounter a file already downloaded.')
-    PARSER.add_argument('-sfw', default=False, action='store_true', required=False, help='Download safe for work images only.')
-    PARSER.add_argument('-nsfw', default=False, action='store_true', required=False, help='Download NSFW images only.')
-    PARSER.add_argument('-regex', default=None, action='store', required=False, help='Use Python regex to filter based on title.')
-    PARSER.add_argument('-verbose', default=False, action='store_true', required=False, help='Enable verbose output.')
-    ARGS = PARSER.parse_args()
+    p = ArgumentParser(description='Downloads files with specified extension from the specified subreddit.')
+    p.add_argument('reddit', metavar='<subreddit>', help='Subreddit name.')
+    p.add_argument('dir', metavar='<destdir>', help='Dir to put downloaded files in.')
+    p.add_argument('-last', metavar='l', default='', required=False, help='ID of the last downloaded file.')
+    p.add_argument('-score', metavar='s', default=0, type=int, required=False, help='Minimum score of images to download.')
+    p.add_argument('-num', metavar='n', default=0, type=int, required=False, help='Number of images to download.')
+    p.add_argument('-update', default=False, action='store_true', required=False, help='Run until you encounter a file already downloaded.')
+    p.add_argument('-sfw', default=False, action='store_true', required=False, help='Download safe for work images only.')
+    p.add_argument('-nsfw', default=False, action='store_true', required=False, help='Download NSFW images only.')
+    p.add_argument('-regex', default=None, action='store', required=False, help='Use Python regex to filter based on title.')
+    p.add_argument('-verbose', default=False, action='store_true', required=False, help='Enable verbose output.')
+    args = p.parse_args()
 
-    print 'Downloading images from "%s" subreddit' % (ARGS.reddit)
+    print 'Downloading images from "%s" subreddit' % (args.reddit)
 
     nTotal = nDownloaded = nErrors = nSkipped = nFailed = 0
     FINISHED = False
 
     # Create the specified directory if it doesn't already exist.
-    if not pathexists(ARGS.dir):
-        mkdir(ARGS.dir)
+    if not pathexists(args.dir):
+        mkdir(args.dir)
 
     # If a regex has been specified, compile the rule (once)
     reRule = None
-    if ARGS.regex:
-        reRule = re.compile(ARGS.regex)
+    if args.regex:
+        reRule = re.compile(args.regex)
 
-    LAST = ARGS.last
+    LAST = args.last
 
     while not FINISHED:
-        ITEMS = getitems(ARGS.reddit, LAST)
+        ITEMS = getitems(args.reddit, LAST)
         if not ITEMS:
             # No more items to process
             break
@@ -179,26 +179,26 @@ if __name__ == "__main__":
         for ITEM in ITEMS:
             nTotal += 1
 
-            if ITEM['score'] < ARGS.score:
-                if ARGS.verbose:
-                    print '    SCORE: %s has score of %s which is lower than required score of %s.' % (ITEM['id'], ITEM['score'], ARGS.score)
+            if ITEM['score'] < args.score:
+                if args.verbose:
+                    print '    SCORE: %s has score of %s which is lower than required score of %s.' % (ITEM['id'], ITEM['score'], args.score)
 
                 nSkipped += 1
                 continue
-            elif ARGS.sfw and ITEM['over_18']:
-                if ARGS.verbose:
+            elif args.sfw and ITEM['over_18']:
+                if args.verbose:
                     print '    NSFW: %s is marked as NSFW.' % (ITEM['id'])
 
                 nSkipped += 1
                 continue
-            elif ARGS.nsfw and not ITEM['over_18']:
-                if ARGS.verbose:
+            elif args.nsfw and not ITEM['over_18']:
+                if args.verbose:
                     print '    Not NSFW, skipping %s' % (ITEM['id'])
 
                 nSkipped += 1
                 continue
-            elif ARGS.regex and not re.match(reRule, ITEM['title']):
-                if ARGS.verbose:
+            elif args.regex and not re.match(reRule, ITEM['title']):
+                if args.verbose:
                     print '    Regex match failed'
 
                 nSkipped += 1
@@ -206,13 +206,13 @@ if __name__ == "__main__":
 
             for url in _extractUrls(ITEM['url']):
                 try:
-                    FILENAME = _downloadFromUrl(url, ARGS.dir)
+                    FILENAME = _downloadFromUrl(url, args.dir)
 
                     # Image downloaded successfully!
                     print '    Downloaded URL [%s].' % (url)
                     nDownloaded += 1
 
-                    if ARGS.num > 0 and nDownloaded >= ARGS.num:
+                    if args.num > 0 and nDownloaded >= args.num:
                         FINISHED = True
                         break
                 except WrongFileTypeException as ERROR:
@@ -221,7 +221,7 @@ if __name__ == "__main__":
                 except FileExistsException as ERROR:
                     print '    %s' % (ERROR)
                     nErrors += 1
-                    if ARGS.update:
+                    if args.update:
                         print '    Update complete, exiting.'
                         FINISHED = True
                         break
