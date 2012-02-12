@@ -28,7 +28,8 @@ def _extractImgurAlbumUrls(albumUrl):
     info = response.info()
 
     # Rudimentary check to ensure the URL actually specifies an HTML file
-    if 'content-type' in info and not info['content-type'].startswith('text/html'):
+    if 'content-type' in info and \
+        not info['content-type'].startswith('text/html'):
         return []
 
     filedata = response.read()
@@ -88,7 +89,8 @@ def _downloadFromUrl(url, destDir):
 
     # Only try to download acceptable image types
     if not filetype in ['image/jpeg', 'image/png', 'image/gif']:
-        raise WrongFileTypeException('WRONG fp TYPE: %s has type: %s!' % (url, filetype))
+        raise WrongFileTypeException(
+            'WRONG fp TYPE: %s has type: %s!' % (url, filetype))
 
     filename = os.path.join(destDir, os.path.basename(url))
 
@@ -139,17 +141,40 @@ def _extractUrls(url):
     return urls
 
 def main():
-    p = argparse.ArgumentParser(description='Downloads files with specified extension from the specified subreddit.')
-    p.add_argument('reddit', metavar='<subreddit>', help='Subreddit name.')
-    p.add_argument('dir', metavar='<destdir>', help='Dir to put downloaded files in.')
-    p.add_argument('--last', metavar='ID', default='', required=False, help='ID of the last downloaded file.')
-    p.add_argument('--score', metavar='score', default=0, type=int, required=False, help='Minimum score of images to download.')
-    p.add_argument('--num', metavar='count', default=0, type=int, required=False, help='Number of images to download.')
-    p.add_argument('--update', default=False, action='store_true', required=False, help='Run until you encounter a file already downloaded.')
-    p.add_argument('--sfw', default=False, action='store_true', required=False, help='Download safe for work images only.')
-    p.add_argument('--nsfw', default=False, action='store_true', required=False, help='Download NSFW images only.')
-    p.add_argument('--regex', default=None, action='store', required=False, help='Use Python regex to filter based on title.')
-    p.add_argument('--verbose', default=False, action='store_true', required=False, help='Enable verbose output.')
+    p = argparse.ArgumentParser(
+        description=('Downloads files with specified extension from the '
+                     'specified subreddit.'))
+
+    p.add_argument('reddit', metavar='<subreddit>', 
+        help='Subreddit name.')
+    p.add_argument('dir', metavar='<destdir>', 
+        help='Dir to put downloaded files in.')
+    p.add_argument('--last',
+        metavar='ID', default='', required=False, 
+        help='ID of the last downloaded file.')
+    p.add_argument('--score',
+        metavar='score', default=0, type=int, required=False, 
+        help='Minimum score of images to download.')
+    p.add_argument('--num',
+        metavar='count', default=0, type=int, required=False, 
+        help='Number of images to download.')
+    p.add_argument('--update',
+        default=False, action='store_true',
+        required=False, 
+        help='Run until you encounter a file already downloaded.')
+    p.add_argument('--sfw',
+        default=False, action='store_true', required=False, 
+        help='Download safe for work images only.')
+    p.add_argument('--nsfw',
+        default=False, action='store_true', required=False, 
+        help='Download NSFW images only.')
+    p.add_argument('--regex',
+        default=None, action='store', required=False, 
+        help='Use Python regex to filter based on title.')
+    p.add_argument('--verbose',
+        default=False, action='store_true', required=False, 
+        help='Enable verbose output.')
+
     args = p.parse_args()
 
     print 'Downloading images from "%s" subreddit' % (args.reddit)
@@ -179,7 +204,9 @@ def main():
 
             if post['score'] < args.score:
                 if args.verbose:
-                    print '    SCORE: %s has score of %s which is lower than required score of %s.' % (post['id'], post['score'], args.score)
+                    print ('    SCORE: %s has score of %s which is lower'
+                           ' than required score of %s.' 
+                           % (post['id'], post['score'], args.score))
 
                 nSkipped += 1
                 continue
@@ -224,7 +251,8 @@ def main():
                         bFinished = True
                         break
                 except urllib2.HTTPError as error:
-                    print '    HTTP error: Code %s for %s.' % (error.code, url)
+                    print ('    HTTP error: Code %s for %s.' % 
+                           (error.code, url))
                     nFailed += 1
                 except urllib2.URLError as error:
                     print '    URL error: %s!' % (url)
@@ -238,7 +266,8 @@ def main():
 
         lastId = post['id']
 
-    print 'Downloaded %d files (Processed %d, Skipped %d, Exists %d)' % (nDownloaded, nTotal, nSkipped, nErrors)
+    print ('Downloaded %d files (Processed %d, Skipped %d, Exists %d)' % 
+           (nDownloaded, nTotal, nSkipped, nErrors))
 
 
 if __name__ == "__main__":
