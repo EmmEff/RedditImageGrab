@@ -133,10 +133,10 @@ def _processImgurUrl(url):
 def _extractUrls(url):
     urls = []
 
-    if 'imgur.com' in ITEM['url']:
-        urls = _processImgurUrl(ITEM['url'])
+    if 'imgur.com' in url:
+        urls = _processImgurUrl(url)
     else:
-        urls = [ITEM['url']]
+        urls = [url]
 
     return urls
 
