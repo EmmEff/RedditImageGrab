@@ -2,12 +2,11 @@
 
 import re
 import StringIO
-from urllib2 import urlopen, HTTPError, URLError
-from httplib import InvalidURL
-from argparse import ArgumentParser
-from os.path import exists as pathexists, join as pathjoin, basename as pathbasename, splitext as pathsplitext
-from os import mkdir
-from reddit import getitems
+import urllib2
+import httplib
+import argparse
+import os
+import reddit
 
 
 class WrongFileTypeException(Exception):
@@ -17,7 +16,6 @@ class WrongFileTypeException(Exception):
 class FileExistsException(Exception):
     """Exception raised when file exists in specified directory"""
 
-
 def _extractImgurAlbumUrls(albumUrl):
     """
     Given an imgur album URL, attempt to extract the images within that
@@ -26,7 +24,7 @@ def _extractImgurAlbumUrls(albumUrl):
     Returns:
         List of qualified imgur URLs
     """
-    response = urlopen(albumUrl)
+    response = urllib2.urlopen(albumUrl)
     info = response.info()
 
     # Rudimentary check to ensure the URL actually specifies an HTML file
@@ -73,37 +71,37 @@ def _downloadFromUrl(url, destDir):
             If the filename (derived from the URL) already exists in
             the destination directory.
     """
-    RESPONSE = urlopen(url)
-    INFO = RESPONSE.info()
+    response = urllib2.urlopen(url)
+    info = response.info()
 
     # Work out file type either from the response or the url.
-    if 'content-type' in INFO.keys():
-        FILETYPE = INFO['content-type']
+    if 'content-type' in info.keys():
+        filetype = info['content-type']
     elif url.endswith('.jpg') or url.endswith('.jpeg'):
-        FILETYPE = 'image/jpeg'
+        filetype = 'image/jpeg'
     elif url.endswith('.png'):
-        FILETYPE = 'image/png'
+        filetype = 'image/png'
     elif url.endswith('.gif'):
-        FILETYPE = 'image/gif'
+        filetype = 'image/gif'
     else:
-        FILETYPE = 'unknown'
+        filetype = 'unknown'
 
     # Only try to download acceptable image types
-    if not FILETYPE in ['image/jpeg', 'image/png', 'image/gif']:
-        raise WrongFileTypeException('WRONG FILE TYPE: %s has type: %s!' % (url, FILETYPE))
+    if not filetype in ['image/jpeg', 'image/png', 'image/gif']:
+        raise WrongFileTypeException('WRONG fp TYPE: %s has type: %s!' % (url, filetype))
 
-    FILENAME = pathjoin(args.dir, pathbasename(url))
+    filename = os.path.join(args.dir, os.path.basename(url))
 
     # Don't download files multiple times!
-    if pathexists(FILENAME):
+    if os.path.exists(filename):
         raise FileExistsException('URL [%s] already downloaded.' % (url))
 
-    FILEDATA = RESPONSE.read()
-    FILE = open(FILENAME, 'wb')
-    FILE.write(FILEDATA)
-    FILE.close()
+    filedata = response.read()
+    fp = open(filename, 'wb')
+    fp.write(filedata)
+    fp.close()
 
-    return FILENAME
+    return filename
 
 
 def _processImgurUrl(url):
@@ -122,7 +120,7 @@ def _processImgurUrl(url):
         url = url.replace('.png', '.jpg')
     else:
         # Extract the file extension
-        basename, ext = pathsplitext(pathbasename(url))
+        basename, ext = os.path.splitext(os.path.basename(url))
         if not ext:
             # Append a default
             url += '.jpg'
@@ -141,103 +139,103 @@ def _extractUrls(url):
     return urls
 
 if __name__ == "__main__":
-    p = ArgumentParser(description='Downloads files with specified extension from the specified subreddit.')
+    p = argparse.ArgumentParser(description='Downloads files with specified extension from the specified subreddit.')
     p.add_argument('reddit', metavar='<subreddit>', help='Subreddit name.')
     p.add_argument('dir', metavar='<destdir>', help='Dir to put downloaded files in.')
-    p.add_argument('-last', metavar='l', default='', required=False, help='ID of the last downloaded file.')
-    p.add_argument('-score', metavar='s', default=0, type=int, required=False, help='Minimum score of images to download.')
-    p.add_argument('-num', metavar='n', default=0, type=int, required=False, help='Number of images to download.')
-    p.add_argument('-update', default=False, action='store_true', required=False, help='Run until you encounter a file already downloaded.')
-    p.add_argument('-sfw', default=False, action='store_true', required=False, help='Download safe for work images only.')
-    p.add_argument('-nsfw', default=False, action='store_true', required=False, help='Download NSFW images only.')
-    p.add_argument('-regex', default=None, action='store', required=False, help='Use Python regex to filter based on title.')
-    p.add_argument('-verbose', default=False, action='store_true', required=False, help='Enable verbose output.')
+    p.add_argument('--last', metavar='ID', default='', required=False, help='ID of the last downloaded file.')
+    p.add_argument('--score', metavar='score', default=0, type=int, required=False, help='Minimum score of images to download.')
+    p.add_argument('--num', metavar='count', default=0, type=int, required=False, help='Number of images to download.')
+    p.add_argument('--update', default=False, action='store_true', required=False, help='Run until you encounter a file already downloaded.')
+    p.add_argument('--sfw', default=False, action='store_true', required=False, help='Download safe for work images only.')
+    p.add_argument('--nsfw', default=False, action='store_true', required=False, help='Download NSFW images only.')
+    p.add_argument('--regex', default=None, action='store', required=False, help='Use Python regex to filter based on title.')
+    p.add_argument('--verbose', default=False, action='store_true', required=False, help='Enable verbose output.')
     args = p.parse_args()
 
     print 'Downloading images from "%s" subreddit' % (args.reddit)
 
     nTotal = nDownloaded = nErrors = nSkipped = nFailed = 0
-    FINISHED = False
+    bFinished = False
 
     # Create the specified directory if it doesn't already exist.
-    if not pathexists(args.dir):
-        mkdir(args.dir)
+    if not os.path.exists(args.dir):
+        os.mkdir(args.dir)
 
     # If a regex has been specified, compile the rule (once)
     reRule = None
     if args.regex:
         reRule = re.compile(args.regex)
 
-    LAST = args.last
+    lastId = args.last
 
-    while not FINISHED:
-        ITEMS = getitems(args.reddit, LAST)
-        if not ITEMS:
+    while not bFinished:
+        postings = reddit.getitems(args.reddit, lastId)
+        if not postings:
             # No more items to process
             break
 
-        for ITEM in ITEMS:
+        for post in postings:
             nTotal += 1
 
-            if ITEM['score'] < args.score:
+            if post['score'] < args.score:
                 if args.verbose:
-                    print '    SCORE: %s has score of %s which is lower than required score of %s.' % (ITEM['id'], ITEM['score'], args.score)
+                    print '    SCORE: %s has score of %s which is lower than required score of %s.' % (post['id'], post['score'], args.score)
 
                 nSkipped += 1
                 continue
-            elif args.sfw and ITEM['over_18']:
+            elif args.sfw and post['over_18']:
                 if args.verbose:
-                    print '    NSFW: %s is marked as NSFW.' % (ITEM['id'])
+                    print '    NSFW: %s is marked as NSFW.' % (post['id'])
 
                 nSkipped += 1
                 continue
-            elif args.nsfw and not ITEM['over_18']:
+            elif args.nsfw and not post['over_18']:
                 if args.verbose:
-                    print '    Not NSFW, skipping %s' % (ITEM['id'])
+                    print '    Not NSFW, skipping %s' % (post['id'])
 
                 nSkipped += 1
                 continue
-            elif args.regex and not re.match(reRule, ITEM['title']):
+            elif args.regex and not re.match(reRule, post['title']):
                 if args.verbose:
                     print '    Regex match failed'
 
                 nSkipped += 1
                 continue
 
-            for url in _extractUrls(ITEM['url']):
+            for url in _extractUrls(post['url']):
                 try:
-                    FILENAME = _downloadFromUrl(url, args.dir)
+                    filename = _downloadFromUrl(url, args.dir)
 
                     # Image downloaded successfully!
                     print '    Downloaded URL [%s].' % (url)
                     nDownloaded += 1
 
                     if args.num > 0 and nDownloaded >= args.num:
-                        FINISHED = True
+                        bFinished = True
                         break
-                except WrongFileTypeException as ERROR:
-                    print '    %s' % (ERROR)
+                except WrongFileTypeException as error:
+                    print '    %s' % (error)
                     nSkipped += 1
-                except FileExistsException as ERROR:
-                    print '    %s' % (ERROR)
+                except FileExistsException as error:
+                    print '    %s' % (error)
                     nErrors += 1
                     if args.update:
                         print '    Update complete, exiting.'
-                        FINISHED = True
+                        bFinished = True
                         break
-                except HTTPError as ERROR:
-                    print '    HTTP ERROR: Code %s for %s.' % (ERROR.code, url)
+                except urllib2.HTTPError as error:
+                    print '    HTTP error: Code %s for %s.' % (error.code, url)
                     nFailed += 1
-                except URLError as ERROR:
-                    print '    URL ERROR: %s!' % (url)
+                except urllib2.URLError as error:
+                    print '    URL error: %s!' % (url)
                     nFailed += 1
-                except InvalidURL as ERROR:
+                except httplib.InvalidURL as error:
                     print '    Invalid URL: %s!' % (url)
                     nFailed += 1
 
-            if FINISHED:
+            if bFinished:
                 break
 
-        LAST = ITEM['id']
+        lastId = post['id']
 
     print 'Downloaded %d files (Processed %d, Skipped %d, Exists %d)' % (nDownloaded, nTotal, nSkipped, nErrors)
